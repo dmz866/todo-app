@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 
-from todos import todo, auth
+from .routes import auth, todo
 from todos.db import get_db
 from . import models
 

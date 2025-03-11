@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from .models import User
-from .db import get_db
+import functools
+
+from todos.models import User
+from todos.db import get_db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 db = get_db()
@@ -47,3 +49,29 @@ def login():
             return redirect(url_for('todo.index'))
 
     return render_template('auth/login.html')
+
+
+@bp.route('/logout', methods=['GET', 'POST'])
+def logout():
+    session.clear()
+    return redirect('/')
+
+
+@bp.before_app_request
+def load_logged_user():
+    user_id = session.get('user_id')
+
+    if user_id is None:
+        g.user = None
+    else:
+        g.user = User.query.get_or_404(user_id)
+
+
+def login_required(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            return redirect(url_for('auth.login'))
+        return view(**kwargs)
+
+    return wrapped_view
